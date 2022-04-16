@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset=utf-8 />
+  <title>Lab 8: Denver home location exercise</title>
+  <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
+  <!-- Is the is the latest version of Leaflet? -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+  <link href="https://fonts.googleapis.com/css?family=Lato:300,400,700" rel="stylesheet">
+
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: rgb(43, 43, 43);
+      font-family: "Lato", sans-serif;
+      font-size: 100%;
+      font-weight: 300;
+      color: rgb(172, 172, 172);
+    }
+
+    header,
+    footer,
+    section {
+      padding: 6px 10%;
+      margin: 0 auto;
+      width: 80%
+    }
+
+    h1 {
+      display: inline-block;
+      margin-right: 20px;
+      color: rgb(190, 190, 190);
+      font-size: 3.5em;
+      font-weight: 700;
+    }
+
+    h2 {
+      display: inline-block;
+      color: rgba(255, 200, 0, 0.8);
+      letter-spacing: 0.05em;
+      margin-top: 0px;
+      font-weight: 300;
+      text-transform: uppercase;
+      border-bottom: 1px dotted rgba(255, 200, 0, 0.5);
+      ;
+    }
+
+    #map {
+      width: 80%;
+      height: 540px;
+      margin: 10px auto;
+    }
+
+    p {
+      font-size: 1em;
+      color: rgba(170, 170, 170);
+      ;
+      font-weight: 300;
+      font-size: 1.2em;
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>Amenities in Denver</h1>
+    <h2>School programs, grocery stores, fire stations</h2>
+  </header>
+
+  <div id='map'></div>
+
+  <footer>
+    <p>Map authored by Aleksandra Craine</p>
+    <p>
+      <ul>
+        <li>See my projects on GitHub: <a href="https://github.com/acr288">Aleksandra Craine</a></li>
+        <li>Follow me on twitter: <a href="https://twitter.com/aleks_craine">@aleks_craine</a></li>
+      </ul>
+    </p>
+  </footer>
+  <!-- Is the is the latest version of Leaflet? -->
+  <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+  <script src="data/denver-fire-stations.js"></script>
+  <script src="data/after-school-programs.js"></script>
+  <script src="data/denver-food-stores.js"></script>
+  <script>
+    var map = L.map('map', {
+      center: [39.7256, -104.9252],
+      zoom: 11,
+    });
+
+    var tiles = L.tileLayer('https://cartodb-basemaps-{s}.global.ssl.fastly.net/rastertiles/dark_all/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="http://cartodb.com/attributions">CartoDB</a>',
+      subdomains: 'abcd',
+      maxZoom: 19
+    }).addTo(map);
+
+    // BEGIN WRITING YOUR SOLUTION CODE HERE
+
+
+    //put data into the map
+    mapCreator = function (data, color) {
+      var layer = L.geoJson(data, {
+        pointToLayer: function (feature, latlng) {
+          return L.circleMarker(latlng);
+        },
+        style: function (feature) {
+          return {
+            fillColor: color,
+            weight: 1,
+            stroke: false,
+            fillOpacity: 1,
+            radius: 5
+          }
+        }
+      })
+
+      return layer
+    }
+
+    const foodStores = mapCreator(stores, "#39c5f9").addTo(map)
+    const afterSchool = mapCreator(programs, "#f8f65d").addTo(map)
+    const fireStations = mapCreator(stations, "#f8625d").addTo(map)
+
+    //create the control/legend
+    var sourcesLayers = {
+      "<b style='color:#39c5f9'>Food Stores</b>": foodStores,
+      "<b style='color:#f8f65d; text-shadow: 0px 0px 2px #333;'>After-School Programs</b>": afterSchool,
+      "<b style='color:#f8625d'>Fire Stations</b>": fireStations
+    }
+
+    L.control.layers(null, sourcesLayers, {
+      collapsed: false
+    }).addTo(map);
+
+    //create interactivity
+    var loopLayers = [foodStores, afterSchool, fireStations]
+
+
+    map.on('click', function (e) {
+      loopLayers.forEach(amenityLayer => {
+        amenityLayer.eachLayer(function (layer) {
+          var distance = e.latlng.distanceTo(layer.getLatLng()) / 1000; // distance as km
+
+
+          if (distance > 1) {
+            layer.setStyle({
+              fillOpacity: .1
+            });
+          } else {
+            layer.setStyle({
+              fillOpacity: 1
+            });
+          }
+        });
+      });
+    })
+
+    map.on('mouseover', function (e) {
+      loopLayers.forEach(amenityLayer => {
+        amenityLayer.eachLayer(function (Layer) {
+          var stuff = Layer.feature.properties
+          let label = null
+
+
+          if (stuff.STORE_NAME) {
+
+            label = `Store Name: <strong>${stuff.STORE_NAME}</strong>`
+          } else if (stuff.STATION_NU) {
+
+            label = `Station Number: <strong>${stuff.STATION_NU}</strong>`
+          } else {
+
+            label = `Organization: <strong>${stuff.ORGANIZATI}</strong>`
+          }
+
+
+
+
+          Layer.bindTooltip(label)
+        })
+      })
+    })
+  </script>
+
+</body>
+
+</html>

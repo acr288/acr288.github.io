@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html>
+
+<meta charset=utf-8 />
+<title>Services Radius</title>
+<meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
+<!-- Is the is the latest version of Leaflet? -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.6.0/dist/leaflet.css" />
+<link href="https://fonts.googleapis.com/css?family=Lato:300,400,700" rel="stylesheet">
+
+<style>
+    body {
+        margin: 0;
+        padding: 0;
+        background: rgb(43, 43, 43);
+        font-family: "Lato", sans-serif;
+        font-size: 100%;
+        font-weight: 300;
+        color: rgb(172, 172, 172);
+    }
+
+    header,
+    footer,
+    section {
+        padding: 6px 10%;
+        margin: 0 auto;
+        width: 80%
+    }
+
+    h1 {
+        display: inline-block;
+        margin-right: 20px;
+        color: rgb(190, 190, 190);
+        font-size: 3.5em;
+        font-weight: 700;
+    }
+
+    h2 {
+        display: inline-block;
+        color: rgba(255, 200, 0, 0.8);
+        letter-spacing: 0.05em;
+        margin-top: 0px;
+        font-weight: 300;
+        text-transform: uppercase;
+        border-bottom: 1px dotted rgba(255, 200, 0, 0.5);
+        ;
+    }
+
+    #map {
+        width: 80%;
+        height: 60vh;
+        margin: 10px auto;
+    }
+
+    p {
+        font-size: 1em;
+        color: rgba(170, 170, 170);
+        ;
+        font-weight: 300;
+        font-size: 1.2em;
+    }
+
+    a {
+        color: rgb(190, 190, 190);
+    }
+
+    .leaflet-control-layers {
+        width: 190px;
+        background: rgb(31, 30, 30);
+        opacity: 5;
+    }
+</style>
+</head>
+
+<body>
+    <header>
+        <h1>Proximity to Local Services</h1>
+        <h2>Denver, CO</h2>
+    </header>
+
+    <div id='map'></div>
+
+    <footer>
+        <p>Map authored by YOUR NAME</p>
+        <p>Additional information about the data and map goes here.</p>
+    </footer>
+
+    <script src="https://unpkg.com/leaflet@1.6.0/dist/leaflet.js"></script>
+    <script src="../data/denver-fire-stations.js"></script>
+    <script src="../data/denver-food-stores.js"></script>
+    <script src="../data/after-school-programs.js"></script>
+    <script>
+        // initialize leaflet map
+        var map = L.map('map', {
+            center: [39.7256, -104.9252],
+            zoom: 11,
+        });
+        // add some tiles
+        var tiles = L.tileLayer('https://cartodb-basemaps-{s}.global.ssl.fastly.net/rastertiles/dark_all/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="http://cartodb.com/attributions">CartoDB</a>',
+            subdomains: 'abcd',
+            maxZoom: 19
+        }).addTo(map);
+        // shared styles
+        var commonStyles = {
+            stroke: false,
+            radius: 5,
+            fillOpacity: 1
+        }
+        // empty object to hold multiple L.geoJson layers
+        var geoJsonLayers = {};
+
+        // data model
+        var layersInfo = {
+            stationsLayer: {
+                source: stations,
+                color: '#f8625d',
+                label: "Fire Station",
+                accessor: 'STATION_NU'
+            },
+            storesLayer: {
+                source: stores,
+                color: '#39c5f9',
+                label: "Grocery Store",
+                accessor: 'STORE_NAME'
+            },
+            programsLayer: {
+                source: programs,
+                color: '#f8f65d',
+                label: "After School Program",
+                accessor: 'ORGANIZATI'
+            }
+        };
+
+        for (var y in layersInfo) { // loop through layersInfo object
+            var layer = layersInfo[y]; // get layer object
+            console.log(layer.source, layer.color, layer.label, layer.accessor); // verify 
+            // build geojson layers with L.geoJson()
+        }
+
+        // loop through the data model
+        for (var gsLayer in layersInfo) {
+
+            var amenity = layersInfo[gsLayer]
+
+            // create new L.geoJson layer for each
+            geoJsonLayers[gsLayer] = L.geoJson(amenity.source, {
+                pointToLayer: function (feature, latlng) {
+                    return L.circleMarker(latlng, {
+                        color: amenity.color
+                    });
+                },
+                style: function (feature) {
+                    return commonStyles;
+                },
+                onEachFeature: function (feature, layer) {
+                    var props = feature.properties
+                    var tooltip = `<h3>${amenity.label}</h3>
+                                    ${props[amenity.accessor]}`;
+                    layer.bindPopup(tooltip);
+                }
+            }).addTo(map);
+        }
+
+        // when use clicks on the map
+        map.on('click', function (e) {
+
+            // loop through all the layer groups
+            for (var gsLayer in geoJsonLayers) {
+
+                // loop through all layers of each group
+                geoJsonLayers[gsLayer].eachLayer(function (layer) {
+
+                    // get the distance
+                    var distance = e.latlng.distanceTo(layer.getLatLng()) / 1000;
+
+                    // show or hide 
+                    if (distance <= 1) {
+                        layer.setStyle({
+                            fillOpacity: 1
+                        });
+                    } else {
+                        layer.setStyle({
+                            fillOpacity: .1
+                        });
+                    }
+                });
+            }
+        });
+
+        // create empty object
+        var denverLocations = {};
+
+        // loop through layerInfo
+        for (var layer in layersInfo) {
+            var amenity = layersInfo[layer]
+            // build string for UI text
+            var str = `<b style='color:${amenity.color}'>${amenity.label}s</b>`;
+            // create object property with pair
+            denverLocations[str] = geoJsonLayers[layer];
+        }
+
+        // add the layer control to the map
+        L.control.layers(null, denverLocations, {
+            collapsed: false
+        }).addTo(map);
+    </script>
+
+</body>
+
+</html>

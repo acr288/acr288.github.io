@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset=utf-8 />
+  <title>Lab 09</title>
+  <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
+    integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A=="
+    crossorigin="" />
+  <link href='http://fonts.googleapis.com/css?family=Lato' rel='stylesheet' type='text/css'>
+
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: #222;
+      /* dark */
+      font-family: Lato, sans-serif;
+      font-size: 100%;
+      color: #ddd;
+      /* light */
+    }
+
+    #map {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 100%;
+      background: rgba(63, 63, 63, 0.9);
+      /* with transparency */
+    }
+
+    a {
+      color: #004A8B;
+    }
+
+    a:hover {
+      color: rgb(67, 69, 71);
+      text-decoration: none;
+    }
+
+    header {
+      width: 80%;
+      margin: 10px auto 10px auto;
+    }
+
+    h1 {
+      display: inline-block;
+      margin-right: 20px;
+      color: #001323;
+    }
+
+    h2 {
+      display: inline-block;
+      color: #001323;
+    }
+
+
+
+    footer {
+      padding: 6px 10%;
+      width: 80%;
+    }
+
+    p {
+      font-size: 1em;
+      color: #001323;
+    }
+
+    .legend {
+      padding: 6px 8px;
+      font-size: 1em;
+      /* Use transparency to blend elements. */
+      border: 2px solid rgba(244, 244, 244, 0.2);
+      background: rgba(100, 100, 100, 0.9);
+      color: rgba(244, 244, 244, 0.8);
+      border-radius: 5px;
+    }
+
+    .legend h3 {
+      font-size: 1.1em;
+      font-weight: bolder;
+      color: #ddd;
+      /* Light */
+      margin: 0 0 10px 0;
+    }
+
+    .legend span {
+      width: 20px;
+      height: 20px;
+      float: left;
+      margin: 0 10px 4px 0;
+    }
+
+    .legend label {
+      font-size: 1.1em;
+    }
+
+    .legend label:after {
+      content: '';
+      display: block;
+      clear: both;
+    }
+
+    .leaflet-bar a {
+      /* Override the default style for Leaflet's zoom  */
+      background: rgba(100, 100, 100, 0.9);
+      color: rgba(244, 244, 244, 0.8);
+    }
+    #info-button {
+      padding: 8px 5px;
+      font-size: 0.9em;
+      font-weight: bolder;
+      /* Style matches Leaflet controls */
+      border: 2px solid rgba(244, 244, 244, 0.2);
+      background: rgba(100, 100, 100, 0.9);
+      color: rgba(244, 244, 244, 0.8);
+      border-radius: 5px;
+      /* Position is fixed next to the zoom bar */
+      position: fixed;
+      top: 11px;
+      right: 52px;
+      /* Draw it on top of all elements */
+      z-index: 9999;
+      /* Cursor change on hover -- doesn't work on touch screensn */
+      cursor: pointer;
+  }
+  
+  #footer {
+      width: 100%;
+      background: rgba(244, 244, 244, 0.8);
+      color: rgba(20, 20, 20, 0.8);
+      box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+      height: 0px;
+      padding: 0px;
+      /* display below the button to allow clicking if overlay covers screen */
+      z-index: 9000;
+      position: absolute;
+      /* 
+      Hide the footer be default. This should not contain too much information. Like to a new page for extended content.
+      */
+      bottom: -10px;
+      /* If too much is included, enable scroll */
+      overflow: scroll;
+  }
+  
+  #footer div {
+      padding: 10px;
+  }
+  
+  #footer h1 {
+      font-size: 1.3em;
+      margin: 0 0 5px 0;
+  }
+  
+  .footer-img {
+      float: right;
+      height: 10vh;
+      margin: 10px;
+  }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>Map Title</h1>
+    <h2>Map Subtitle</h2>
+  </header>
+
+  <div id='map'></div>
+
+  <div id='map'></div>
+<button id="info-button" onclick="myInfo()">Information</button>
+<div id='footer'>
+    <div><img src="https://uky-gis.github.io/graphics/logo-color-400px.png" class="footer-img">
+        <h1>Median rent per county, 2015</h1>
+        Data obtained through the American Fact Finder (<a href="http://factfinder.census.gov/">factfinder.census.gov</a>);
+        2010 Census, SF1. Wow, are these numbers outdated! Who else misses 2015 right now? Map created by Aleksandra Craine
+    </div>
+</div>
+
+  <!-- Load scripts using Subresource Integrity (SRI) is a security feature 
+      that enables browsers to verify that resources they fetch (from a CDN) 
+      are delivered without unexpected manipulation. -->
+  <<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js">
+    </script>
+    <!-- add jQuery JS script -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"
+      integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"
+      integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA=="
+      crossorigin=""></script>
+    <script src="https://unpkg.com/simple-statistics@7.6.0/dist/simple-statistics.min.js"></script>
+
+
+    <script>
+      var options = {
+        center: [37.8, -100],
+        zoom: 4.5,
+        zoomSnap: .1,
+        zoomControl: false
+      }
+      var map = L.map('map', options);
+
+      var attributeValue = "RENT",
+        nameValue = "NAME"
+
+        
+
+      var countyLayer = $.getJSON("data/counties_median_rent_2015.json", function (data) {
+        //console.log(data)
+        var dataLayer = L.geoJson(data, {
+          style: function (feature) {
+            return {
+              color: '#dddddd',
+              weight: 1,
+              fillOpacity: 1,
+              fillColor: '#1f78b4'
+            };
+          }
+        }).addTo(map);
+        drawMap(dataLayer);
+      });
+
+      $.when(countyLayer).done(function () {
+        // load, filter, and style the state outline 
+        $.getJSON("data/us_states_20m.geojson", function (data) {
+  
+          var stateLayer = L.geoJson(data, {
+            style: function (feature) {
+              return {
+              
+                color: '#2222',
+                // Make line weight larger than the county outline
+                weight: 2,
+                fillOpacity: 0,
+                // This property allows us control interactivty of layer
+                interactive: false
+              };
+            },
+  
+            
+          });
+  
+          // Add layer to map!
+          stateLayer.addTo(map)
+  
+        });
+      });
+
+      function drawMap(dataLayer) {
+
+        var breaks = getClassBreaks(dataLayer);
+
+        dataLayer.eachLayer(function (layer) {
+
+          var props = layer.feature.properties;
+
+          layer.setStyle({
+            fillColor: getColor(props[attributeValue], breaks)
+          })
+
+          //console.log(props)
+          if (L.Browser.mobile) {
+            // if true use popup
+            layer.bindPopup(`${props.NAME} County<br>Average rent: $${props.RENT}`);
+          } else {
+            // if false use tooltip
+            layer.bindTooltip(`${props.NAME} County<br>Average rent: $${props.RENT}`, {
+              sticky: true
+            });
+          };
+
+        });
+        drawLegend(breaks)
+      }
+
+      function getClassBreaks(dataLayer) {
+
+        // create empty Array for storing values
+        var values = [];
+
+        // loop through all the counties
+        dataLayer.eachLayer(function (layer) {
+          var props = layer.feature.properties;
+          var value = props[attributeValue];
+          if (value != null) {
+            values.push(value);
+            //console.log(values)
+          }
+
+        });
+
+
+
+        // determine similar clusters
+        var clusters = ss.ckmeans(values, 5);
+        // console.log(clusters)
+
+        // create an array of the lowest value within each cluster
+        var breaks = clusters.map(function (cluster) {
+          return [cluster[0], cluster.pop()];
+        });
+        //console.log(breaks)
+        return breaks; // return Array of class breaks
+      } // end getClassBreaks function
+
+      function getColor(d, breaks) {
+
+        if (d <= parseInt(breaks[0][1])) {
+          return '#f1eef6';
+        } else if (d <= parseInt(breaks[1][1])) {
+          return '#bdc9e1';
+        } else if (d <= parseInt(breaks[2][1])) {
+          return '#6db2f7';
+        } else if (d <= parseInt(breaks[3][1])) {
+          return '#2b8cbe';
+        } else if (d <= parseInt(breaks[4][1])) {
+          return '#045a8d';
+        }
+      } // end getColor
+
+      function drawLegend(breaks) {
+       // console.log(breaks);
+        // create the Leaflet control and position
+        var legend = L.control({
+          position: 'topleft'
+        });
+
+        // when it's added to the map
+        legend.onAdd = function () {
+
+          // create a new DOM div element with a class name of "legend"
+          var div = L.DomUtil.create('div', 'legend');
+
+          // insert some placeholder text for now
+          div.innerHTML = `<h3>MEDIAN ${attributeValue} BY COUNTY </h3>`;
+          for (var i = 0; i < breaks.length; i++) {
+            var color = getColor(breaks[i][0], breaks);
+           // console.log(color)
+            div.innerHTML +=
+              `<span style="background:${color}"></span>
+              <label>$${(breaks[i][0]).toLocaleString()}&mdash;
+              ${(breaks[i][1]).toLocaleString()}</label>`;
+          }
+
+          // return the div element
+          return div;
+
+        };
+
+        // add the legend to the map
+        legend.addTo(map);
+      }
+
+              /* --------------- Toggle on/off info footer content ---------------  */
+var clicked = false // start with false condition
+function myInfo() {
+
+    // create button that changes color on click
+    // create a footer overlay that displays 33% of the current viewport height
+    var x = document.getElementById('footer');
+    var y = document.getElementById('info-button');
+    if (clicked) {
+        y.style.background = 'rgba(100, 100, 100, 0.9)'; // gray button
+        x.style.height = '0px'; // no footer height 
+    } else {
+        y.style.background = 'rgba(146, 239, 146, 0.8)' // green button
+        x.style.height = '33vh';  // footer 33% of viewport height
+    }
+    clicked = !clicked
+
+}
+    </script>
+
+</body>
+
+</html>
