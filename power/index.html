@@ -245,32 +245,40 @@
                 }
             },
             style: function (feature) {
-                if (feature.properties.fuel_source.Nuclear) {
+
+				const largest = multiLargest(feature.properties.fuel_source)
+                if (largest[0] === 'Nuclear') {
                     return {
                         color: '#f04a15',
                         fillColor: '#f04a15',
                         radius: getRadius(feature.properties.capacity_mw)
                     }
-                } else if (feature.properties.fuel_source.Solar) {
+                } else if (largest[0] === 'Solar') {
                     return {
                         color: '#f6df75',
                         fillColor: '#f6df75',
                         radius: getRadius(feature.properties.capacity_mw)
                     }
-                } else if (feature.properties.fuel_source.Wind) {
+                } else if (largest[0] === 'Wind') {
                     return {
                         color: '#75f6f0',
                         fillColor: '#75f6f0',
                         radius: getRadius(feature.properties.capacity_mw)
                     }
 
-                } else if (feature.properties.fuel_source.Hydro) {
+                } else if (largest[0] === 'Hydro') {
                     return {
                         color: '#5d85f8',
                         fillColor: '#5d85f8',
                         radius: getRadius(feature.properties.capacity_mw)
                     }
-                }
+                } else {
+					return {
+						color: 'gray',
+						fillColor: 'gray',
+						radius: getRadius(feature.properties.capacity_mw)
+					}
+				}
             },
             onEachFeature: function (feature, layer) {
 				
@@ -285,7 +293,7 @@
 
                 layer.bindTooltip(`<b>${layer.feature.properties.plant_name}</b>
 									<br>${layer.feature.properties.capacity_mw} MW <br>
-									Fuel type: ${Object.keys(feature.properties.fuel_source)}`);
+									Sources<br> ${listSources(feature.properties.fuel_source)}`);
             }
 
         }).addTo(map);
@@ -293,6 +301,35 @@
 		function getRadius(area) {
 			var radius = Math.sqrt(area / Math.PI);
 			return radius * .6;
+		}
+
+		function listSources(plant) {
+			let sources = [];
+			let list = "";
+				
+			for (let key in plant) {
+				sources.push([plant[key], key]);
+			}
+			sources.sort(function (a, b) {
+				return b[0] - a[0];
+			});
+			
+			for (i of sources) {
+				list += `${i[1]} Capacity: ${i[0].toLocaleString('en-US', { maximumFractionDigits: 1 })} MW<br>`
+			}
+			return list;
+		}
+
+		function multiLargest(fuel) {
+			o = ['fuel', 0]
+			for (f in fuel) {
+				if (fuel[f] > o[1]) {
+					console.log(f)
+					o[0] = f
+					o[1] = fuel[f]
+				}
+			}
+			return o
 		}
 		
 
