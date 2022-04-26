@@ -42,3 +42,8 @@ a {
 h1 {
   font-family: 'Rubik Mono One', sans-serif;
 }
+
+.card .card-img-top {
+  object-fit: cover;
+  height: calc(50px + 25vw);
+}
