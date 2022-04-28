@@ -45,5 +45,5 @@ h1 {
 
 .card .card-img-top {
   object-fit: cover;
-  height: calc(50px + 25vw);
+  height: calc(50px + 10vw);
 }
